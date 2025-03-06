@@ -1,16 +1,45 @@
+#!/usr/bin/env python
+
 import tkinter as tk
 import time
 import winsound
 import threading
 import psutil
+
+import logging
 import sys
 import math
 from pystray import MenuItem as item, Icon
 from PIL import Image, ImageDraw, ImageFont
+import os
+import shutil
+
+startup_folder = os.path.join(os.getenv('APPDATA'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
+script_path = os.path.abspath(__file__)
+shortcut_path = os.path.join(startup_folder, '90mintimer.lnk')
+
+if not os.path.exists(shortcut_path):
+    shutil.copy(script_path, shortcut_path)
+
+
 
 
 class TimerApp:
     def __init__(self):
+       # logging.basicConfig(filename='timer.log', level=logging.INFO)
+        #logging.info("App is running")
+        logging.basicConfig(
+            filename='timer.log',
+            level=logging.INFO,
+            format='%(asctime)s %(levelname)s: %(message)s'
+        )
+        logging.info("=" * 50)
+        logging.info("New App's start")
+        logging.info(f"Python verion: {sys.version}")
+        logging.info(f"Path: {os.path.abspath(__file__)}")
+
+        logging.info("App is running")
+
         self.root = tk.Tk()
         self.root.withdraw()
 
@@ -20,7 +49,7 @@ class TimerApp:
         self.accumulated_time = 0
         self.last_check = time.time()
         self.check_interval = 60  # Проверка каждые 60 секунд
-        self.target_time = 5400  # 1.5 часа = 5400 секунд  !!!!!!!!!!!!
+        self.target_time = 60  # 1.5 часа = 5400 секунд  !!!!!!!!!!!!
         self.sound_playing = False
 
         # Проверка времени загрузки системы
@@ -76,9 +105,12 @@ class TimerApp:
         )
 
         self.icon = Icon("break_timer", image, "Таймер перерывов", menu)
+
         threading.Thread(target=self.icon.run, daemon=True).start()
 
     def run_timer(self):
+        logging.info("Timer has started")
+
         while self.timer_running:
             if not self.paused:
                 current_time = time.time()

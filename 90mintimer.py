@@ -1,50 +1,115 @@
+#!/usr/bin/env python
+
 import tkinter as tk
 import time
 import winsound
 import threading
 import psutil
+
+import logging
 import sys
 import math
 from pystray import MenuItem as item, Icon
 from PIL import Image, ImageDraw, ImageFont
+import os
+import shutil
+import platform
+import datetime
+
+import winshell
+from win32com.client import Dispatch
+
+
+def add_to_startup(script_path=None):
+    startup_folder = winshell.startup()
+    shortcut_path = os.path.join(startup_folder, '90mintimer.lnk')
+
+    if not os.path.exists(shortcut_path):
+        shell = Dispatch('WScript.Shell')
+        shortcut = shell.CreateShortcut(shortcut_path)
+        shortcut.TargetPath = sys.executable  # Запускаем через Python
+        shortcut.Arguments = f'"{script_path}"'
+        shortcut.WorkingDirectory = os.path.dirname(script_path)
+        shortcut.Save()
+        print(f"Создан ярлык в {shortcut_path}")
+
+
+add_to_startup()
+
+
+# startup_folder = os.path.join(os.getenv('APPDATA'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
+# script_path = os.path.abspath(__file__)
+# shortcut_path = os.path.join(startup_folder, '90mintimer.lnk')
+#
+# if not os.path.exists(shortcut_path):
+#     shutil.copy(script_path, shortcut_path)
+
+
 
 
 class TimerApp:
     def __init__(self):
-        self.root = tk.Tk()
-        self.root.withdraw()
+       # logging.basicConfig(filename='timer.log', level=logging.INFO)
+        #logging.info("App is running")
 
-        # Инициализация параметров
-        self.timer_running = True
-        self.paused = False
-        self.accumulated_time = 0
-        self.last_check = time.time()
-        self.check_interval = 60  # Проверка каждые 60 секунд
-        self.target_time = 5400  # 1.5 часа = 5400 секунд  !!!!!!!!!!!!
-        self.sound_playing = False
+       # Настройка логирования
+       #logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-        # Проверка времени загрузки системы
-        if time.time() - psutil.boot_time() < 300:
+       # Фиксация времени старта
+       start_time = datetime.datetime.now()
+
+
+       logging.info(f"Platform python version: {platform.python_version()}")
+       logging.info(f"System PATH: {sys.path}")
+
+       logging.basicConfig(
+          filename='timer.log',
+          level=logging.INFO,
+          format='%(asctime)s %(levelname)s: %(message)s'
+       )
+
+       logging.info("=" * 50)
+       # logging.info("New App's start")
+       logging.info(f"New App's start at {start_time}")
+       logging.info(f"Python verion: {sys.version}")
+       logging.info(f"Path: {os.path.abspath(__file__)}")
+
+       logging.info("App is running")
+
+       self.root = tk.Tk()
+       self.root.withdraw()
+
+       # Инициализация параметров
+       self.timer_running = True
+       self.paused = False
+       self.accumulated_time = 0
+       self.last_check = time.time()
+       self.check_interval = 60  # Проверка каждые 60 секунд
+       self.target_time = 60  # 1.5 часа = 5400 секунд  !!!!!!!!!!!!
+       self.sound_playing = False
+
+       # Проверка времени загрузки системы
+       if time.time() - psutil.boot_time() < 300:
             self.accumulated_time = 0
 
-        # Настройка стилей
-        self.button_font = ('Arial', 12, 'bold')
-        self.title_font = ('Arial', 16, 'bold')
-        # Установка фона окна
-        self.bg_color = '#6A5ACD'  # Сиреневый
-        # Установка цвета текста
-        self.fg_color = '#F0F8FF'  # Белый
-        self.btn_colors = {
+       # Настройка стилей
+       self.button_font = ('Arial', 12, 'bold')
+       self.title_font = ('Arial', 16, 'bold')
+       # Установка фона окна
+       self.bg_color = '#6A5ACD'  # Сиреневый
+       # Установка цвета текста
+       self.fg_color = '#F0F8FF'  # Белый
+       self.btn_colors = {
             'green': ('#4CAF50', '#45A049'),
             'red': ('#F44336', '#D32F2F')
         }
 
-        # Иконка в системном трее
-        self.create_tray_icon()
+       # Иконка в системном трее
+       self.create_tray_icon()
 
-        self.timer_thread = threading.Thread(target=self.run_timer, daemon=True)
-        self.timer_thread.start()
-        self.root.mainloop()
+       self.timer_thread = threading.Thread(target=self.run_timer, daemon=True)
+       self.timer_thread.start()
+       self.root.mainloop()
 
     def create_tray_icon(self):
         # Создание изображения секундомера
@@ -76,9 +141,12 @@ class TimerApp:
         )
 
         self.icon = Icon("break_timer", image, "Таймер перерывов", menu)
+
         threading.Thread(target=self.icon.run, daemon=True).start()
 
     def run_timer(self):
+        logging.info("Timer has started")
+
         while self.timer_running:
             if not self.paused:
                 current_time = time.time()
@@ -216,7 +284,8 @@ class TimerApp:
 
     def exit_app(self):
         self.disable_timer()
-        self.icon.stop()
+        if self.icon:
+            self.icon.stop()
 
 
 if __name__ == "__main__":
