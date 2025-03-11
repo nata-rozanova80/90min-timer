@@ -9,17 +9,18 @@ import os
 
 
 class TimerApp:
-    def __init__(self, start_time=None):
-
-        start_time = datetime.datetime.now()
+    def __init__(self):
+        self.start_time = datetime.datetime.now()  # Время старта программы
+        self.timer_triggers = 0  # Счётчик срабатываний
+        self.last_trigger_time = None  # Время последнего срабатывания
 
         logging.basicConfig(filename='timer.log', level=logging.INFO)
         logging.info("=" * 50)
-        logging.info(f"New timer-v1 start at {start_time}")
+        logging.info(f"New timer-v1 start at {self.start_time}")
         logging.info("App timer-v1 is running")
 
-        logging.info(f"Python verion (timer-vq1): {sys.version}")
-        logging.info(f"Path (timer-vq1): {os.path.abspath(__file__)}")
+        logging.info(f"Python version (timer-v1): {sys.version}")
+        logging.info(f"Path (timer-v1): {os.path.abspath(__file__)}")
 
         self.root = tk.Tk()
         self.root.withdraw()
@@ -50,6 +51,10 @@ class TimerApp:
 
             self.last_check = current_time
 
+            # Лог 1: Общее время работы
+            total_time = datetime.datetime.now() - self.start_time
+            logging.info(f"Total active time: {total_time}")  # NEW LOG <button class="citation-flag" data-index="1">
+
             if self.accumulated_time >= self.target_time:
                 self.show_alert()
                 self.accumulated_time = 0
@@ -57,6 +62,9 @@ class TimerApp:
             time.sleep(self.check_interval)
 
     def show_alert(self):
+        self.timer_triggers += 1  # Увеличение счётчика
+        self.last_trigger_time = datetime.datetime.now()  # Обновление времени
+
         self.alert_window = tk.Toplevel()
         self.alert_window.title("Перерыв!")
         self.alert_window.configure(bg='#F0F0F0')
@@ -69,6 +77,14 @@ class TimerApp:
         x = (screen_width - window_width) // 2
         y = int(screen_height * 0.66) - window_height // 2
         self.alert_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        # Лог 2 и 3
+        #logging.info(f"The alert went off {self.timer_triggers} times <button class="citation-flag" data-index="2">")  # NEW LOG
+        logging.info(
+            f'The alert went off {self.timer_triggers} times <button class="citation-flag" data-index="2">')  # NEW LOG <button class="citation-flag" data-index="1">
+        if self.last_trigger_time:
+            time_since_last = datetime.datetime.now() - self.last_trigger_time
+            logging.info(f"Time since last alert: {time_since_last}")  # NEW LOG <button class="citation-flag" data-index="3">
 
         # Воспроизведение звука
         self.sound_playing = True
